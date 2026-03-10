@@ -1,6 +1,6 @@
 import { useAuthStore } from '../store/useAuthStore'
 
-const BASE_URL = import.meta.env.VITE_API_URL
+const BASE_URL = 'https://backend-production-1708.up.railway.app/api'
 
 async function request(path, options = {}) {
   const token = useAuthStore.getState().token
