@@ -4,11 +4,12 @@ import { MediaCard } from '../components/MediaCard.jsx'
 import { SkeletonCard } from '../components/SkeletonCard.jsx'
 import { Download, X } from 'lucide-react'
 
-const FILTERS = ['All', 'Images', 'Videos', 'Pending', 'Failed']
+const FILTERS = ['All', 'Images', 'Videos', 'Edits', 'Pending', 'Failed']
 const FILTER_MAP = {
   All: {},
   Images: { mode: 'IMAGE' },
   Videos: { mode: 'VIDEO' },
+  Edits: { mode: 'IMAGE_EDIT' },
   Pending: { status: 'pending' },
   Failed: { status: 'failed' }
 }
@@ -52,7 +53,7 @@ export function DashboardScreen({ navigation }) {
       try {
         const data = await api.getPrompts({ page: 1, limit: 20, ...FILTER_MAP[activeFilter] })
         setPrompts(data.prompts || [])
-      } catch {}
+      } catch { }
     }, 5000)
     return () => clearInterval(pollRef.current)
   }, [prompts, activeFilter])
@@ -121,11 +122,10 @@ export function DashboardScreen({ navigation }) {
           <button
             key={f}
             onClick={() => setActiveFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${
-              activeFilter === f
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeFilter === f
                 ? 'bg-primary text-white'
                 : 'bg-dark-card text-dark-text-muted hover:text-white'
-            }`}
+              }`}
           >
             {f}
           </button>
