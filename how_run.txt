@@ -1,0 +1,7 @@
+# Terminal 1 — Frontend
+cd autoflow_App
+npm run dev        # → http://localhost:5173
+
+# Terminal 2 — Backend  
+cd autoflow_App/backend
+node src/server.js # → http://localhost:3000
