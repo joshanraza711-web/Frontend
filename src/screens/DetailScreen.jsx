@@ -77,11 +77,22 @@ export function DetailScreen({ route, navigation }) {
       {/* Media Display */}
       <div className="w-full bg-dark-card border-b border-dark-border flex items-center justify-center" style={{ aspectRatio: '1' }}>
         {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={prompt.prompt}
-            className="w-full h-full object-contain"
-          />
+          prompt.mode === 'VIDEO' ? (
+            <video 
+              src={imageUrl} 
+              className="w-full h-full object-contain"
+              autoPlay
+              loop
+              controls
+              playsInline
+            />
+          ) : (
+            <img 
+              src={imageUrl} 
+              alt={prompt.prompt}
+              className="w-full h-full object-contain"
+            />
+          )
         ) : (
           <div className="flex flex-col items-center gap-3">
             <div className="text-6xl">🖼️</div>

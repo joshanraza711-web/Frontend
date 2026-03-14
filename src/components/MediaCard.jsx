@@ -66,19 +66,31 @@ export function MediaCard({ item, onPress, onLongPress, isSelected, onPin, onDel
 
       <div className="w-full h-28 bg-[#0C0C14] relative flex items-center justify-center overflow-hidden">
         {thumbnail ? (
-          <img 
-            src={thumbnail} 
-            alt={item.prompt} 
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          isVideo ? (
+            <video 
+              src={thumbnail}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+            />
+          ) : (
+            <img 
+              src={thumbnail} 
+              alt={item.prompt} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+            />
+          )
         ) : (
           <ImageIcon size={32} className="text-gray-700" />
         )}
         
         {isVideo && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-            <div className="bg-white/20 backdrop-blur-md rounded-full p-2 shadow-lg">
-              <Play size={20} className="text-white fill-white" />
+          <div className="absolute top-2 left-2 z-10 pointer-events-none">
+            <div className="bg-black/40 backdrop-blur-md rounded-full p-1.5 shadow-lg border border-white/10">
+              <Play size={12} className="text-white fill-white" />
             </div>
           </div>
         )}
