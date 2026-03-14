@@ -14,16 +14,22 @@ const FILTER_MAP = {
   Failed: { status: 'failed' }
 }
 
-export function DashboardScreen({ navigation }) {
+export function DashboardScreen({ navigation, route }) {
   const [prompts, setPrompts] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [activeFilter, setActiveFilter] = useState('All')
+  const [activeFilter, setActiveFilter] = useState(route?.params?.filter || 'All')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [selectMode, setSelectMode] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const pollRef = useRef(null)
+
+  useEffect(() => {
+    if (route?.params?.filter) {
+      setActiveFilter(route.params.filter)
+    }
+  }, [route?.params?.filter])
 
   const fetchPrompts = useCallback(async (pg = 1, reset = false) => {
     if (pg === 1) setLoading(true)

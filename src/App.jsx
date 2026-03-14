@@ -82,12 +82,12 @@ export default function App() {
 
   function renderScreen() {
     switch (screen) {
-      case 'Dashboard': return <DashboardScreen navigation={nav} />
+      case 'Dashboard': return <DashboardScreen navigation={nav} route={{ params }} />
       case 'Generate':  return <GenerateScreen navigation={nav} />
       case 'Profile':   return <ProfileScreen navigation={nav} />
       case 'Detail':    return <DetailScreen navigation={nav} route={{ params }} />
       case 'Admin':     return <AdminScreen navigation={nav} />
-      default:          return <DashboardScreen navigation={nav} />
+      default:          return <DashboardScreen navigation={nav} route={{ params }} />
     }
   }
 
