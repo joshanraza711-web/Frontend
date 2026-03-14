@@ -4,9 +4,12 @@ import { MediaCard } from '../components/MediaCard.jsx'
 import { SkeletonCard } from '../components/SkeletonCard.jsx'
 import { Download, X, Search, SlidersHorizontal, Pin, MoreHorizontal } from 'lucide-react'
 
-const FILTERS = ['All', 'Completed', 'Processing', 'Failed']
+const FILTERS = ['All', 'Images', 'Videos', 'Edits', 'Completed', 'Processing', 'Failed']
 const FILTER_MAP = {
   All: {},
+  Images: { mode: 'IMAGE' },
+  Videos: { mode: 'VIDEO' },
+  Edits: { mode: 'IMAGE_EDIT' },
   Completed: { status: 'completed' },
   Processing: { status: 'pending' },
   Failed: { status: 'failed' }
@@ -30,12 +33,7 @@ export function DashboardScreen({ navigation, route }) {
   useEffect(() => {
     if (route?.params?.filter) {
       const rf = route.params.filter
-      if (['Images', 'Videos', 'Edits'].includes(rf)) {
-        // If navigating from media type, set filter to All (types are handled implicitly if needed, but the screenshot shows status filters)
-        // For now, we will just set it to 'All' or map it if we add type filters back.
-        // Assuming the user just wants the status filters now as per screenshot: 'All', 'Completed', 'Processing', 'Failed'
-        setActiveFilter('All')
-      } else if (FILTERS.includes(rf)) {
+      if (FILTERS.includes(rf)) {
         setActiveFilter(rf)
       } else if (rf === 'Pending') {
         setActiveFilter('Processing')
@@ -240,13 +238,13 @@ export function DashboardScreen({ navigation, route }) {
             <button className="text-gray-500 hover:text-white"><MoreHorizontal size={20} /></button>
           </div>
 
-          {/* Filter Tabs matching Screenshot exactly */}
-          <div className="flex justify-between bg-white/5 rounded-full p-1 border border-white/5 mb-6">
+          {/* Filter Tabs matching Screenshot exactly (+ extra type tabs) */}
+          <div className="flex bg-white/5 rounded-full p-1 border border-white/5 mb-6 overflow-x-auto scrollbar-hide snap-x">
              {FILTERS.map(f => (
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`flex-1 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 ${
+                className={`flex-none px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 snap-center ${
                   activeFilter === f
                     ? 'bg-primary text-white shadow-md'
                     : 'text-gray-400 hover:text-white'
