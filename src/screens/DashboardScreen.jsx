@@ -2,108 +2,89 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../services/api'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { SkeletonCard } from '../components/SkeletonCard.jsx'
-import { Download, X, Search, SlidersHorizontal, Pin, MoreHorizontal } from 'lucide-react'
+import { Download, X, Image as ImageIcon, Video, Folder, Hourglass, Pencil, Pin } from 'lucide-react'
 
-const FILTERS = ['All', 'Images', 'Videos', 'Edits', 'Completed', 'Processing', 'Failed']
+const FILTERS = ['All', 'Images', 'Videos', 'Edits', 'Pending', 'Failed', 'Pinned']
 const FILTER_MAP = {
   All: {},
   Images: { mode: 'IMAGE' },
   Videos: { mode: 'VIDEO' },
   Edits: { mode: 'IMAGE_EDIT' },
-  Completed: { status: 'completed' },
-  Processing: { status: 'pending' },
-  Failed: { status: 'failed' }
+  Pending: { status: 'pending' },
+  Failed: { status: 'failed' },
+  Pinned: { is_pinned: true }
 }
 
 export function DashboardScreen({ navigation, route }) {
-  const [pinnedPrompts, setPinnedPrompts] = useState([])
-  const [recentPrompts, setRecentPrompts] = useState([])
-  const [loadingPinned, setLoadingPinned] = useState(true)
-  const [loadingRecent, setLoadingRecent] = useState(true)
-  
-  const [activeFilter, setActiveFilter] = useState('All')
+  const [prompts, setPrompts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [activeFilter, setActiveFilter] = useState(route?.params?.filter || 'All')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [selectMode, setSelectMode] = useState(false)
-  
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [stats, setStats] = useState({ 
+    total: 0, completed: 0, pending: 0, failed: 0, 
+    images: 0, videos: 0, edits: 0, pinned: 0 
+  })
   const pollRef = useRef(null)
 
-  // Handle incoming Profile route filters
   useEffect(() => {
     if (route?.params?.filter) {
-      const rf = route.params.filter
-      if (FILTERS.includes(rf)) {
-        setActiveFilter(rf)
-      } else if (rf === 'Pending') {
-        setActiveFilter('Processing')
-      }
+      setActiveFilter(route.params.filter)
     }
   }, [route?.params?.filter])
 
-  const fetchPinned = async () => {
-    try {
-      const data = await api.getPrompts({ is_pinned: true, limit: 20 })
-      setPinnedPrompts(data.prompts || [])
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoadingPinned(false)
-    }
-  }
+  // Fetch stats for the circular menu bubbles
+  useEffect(() => {
+    api.getMyStats().then(setStats).catch(console.error)
+  }, [activeFilter, prompts.length]) // Refresh stats when prompts change
 
-  const fetchRecent = useCallback(async (pg = 1, reset = false) => {
-    if (pg === 1) setLoadingRecent(true)
+  const fetchPrompts = useCallback(async (pg = 1, reset = false) => {
+    if (pg === 1) setLoading(true)
     try {
-      // Fetch recent items matching the selected status filter, but EXCLUDE pinned ones so they don't duplicate
-      // (Note: The backend `/prompts` endpoint currently might not support `is_pinned: false` easily without modifying backend route.
-      // If `is_pinned` filter is available, we use it. We'll assume the backend can handle `is_pinned: false` or we just filter client-side if needed.
-      // Actually, looking at the backend route, it accepts standard exact matching.
-      const data = await api.getPrompts({ page: pg, limit: 20, ...FILTER_MAP[activeFilter], is_pinned: false })
+      const data = await api.getPrompts({ page: pg, limit: 20, ...FILTER_MAP[activeFilter] })
       const newPrompts = data.prompts || []
-      setRecentPrompts(prev => reset || pg === 1 ? newPrompts : [...prev, ...newPrompts])
+      setPrompts(prev => reset || pg === 1 ? newPrompts : [...prev, ...newPrompts])
       setHasMore(pg < (data.pagination?.pages || 1))
       setPage(pg)
     } catch (e) {
       console.error(e)
     } finally {
-      setLoadingRecent(false)
+      setLoading(false)
+      setRefreshing(false)
     }
   }, [activeFilter])
 
   useEffect(() => {
-    fetchPinned()
-  }, [])
+    fetchPrompts(1, true)
+  }, [activeFilter])
 
-  useEffect(() => {
-    fetchRecent(1, true)
-  }, [activeFilter, fetchRecent])
-
-  // Poll for pending prompts
+  // Poll for pending prompts every 5s
   useEffect(() => {
     pollRef.current = setInterval(async () => {
-      const hasPending = recentPrompts.some(p => p.status === 'pending' || p.status === 'processing') || 
-                         pinnedPrompts.some(p => p.status === 'pending' || p.status === 'processing')
+      const hasPending = prompts.some(p => p.status === 'pending' || p.status === 'processing')
       if (!hasPending) return
-      
-      fetchPinned()
-      fetchRecent(1, true)
-      
+      try {
+        const data = await api.getPrompts({ page: 1, limit: 20, ...FILTER_MAP[activeFilter] })
+        setPrompts(data.prompts || [])
+      } catch { }
     }, 5000)
     return () => clearInterval(pollRef.current)
-  }, [recentPrompts, pinnedPrompts, fetchRecent])
+  }, [prompts, activeFilter])
 
   async function handleDelete(id) {
     if (!window.confirm('Are you sure you want to delete this media?')) return
     try {
       await api.deletePrompt(id)
-      setPinnedPrompts(prev => prev.filter(p => p.id !== id))
-      setRecentPrompts(prev => prev.filter(p => p.id !== id))
+      setPrompts(prev => prev.filter(p => p.id !== id))
       setSelectedIds(prev => {
         const next = new Set(prev)
         next.delete(id)
         return next
       })
+      // trigger stats refresh implicitly
     } catch (err) {
       alert('Delete failed: ' + err.message)
     }
@@ -112,23 +93,7 @@ export function DashboardScreen({ navigation, route }) {
   async function handlePin(id, is_pinned) {
     try {
       await api.pinPrompt(id, !is_pinned)
-      // Moving between lists
-      if (!is_pinned) {
-        // Was unpinned -> Now pinned
-        const item = recentPrompts.find(p => p.id === id)
-        if (item) {
-          setRecentPrompts(prev => prev.filter(p => p.id !== id))
-          setPinnedPrompts(prev => [{ ...item, is_pinned: true }, ...prev])
-        }
-      } else {
-        // Was pinned -> Now unpinned
-        const item = pinnedPrompts.find(p => p.id === id)
-        if (item) {
-          setPinnedPrompts(prev => prev.filter(p => p.id !== id))
-          // Only add to recent if it matches current filter (simplified: just add and let reload sort it if needed)
-          setRecentPrompts(prev => [{ ...item, is_pinned: false }, ...prev])
-        }
-      }
+      setPrompts(prev => prev.map(p => p.id === id ? { ...p, is_pinned: !is_pinned } : p))
     } catch (err) {
       alert('Pin failed: ' + err.message)
     }
@@ -169,130 +134,153 @@ export function DashboardScreen({ navigation, route }) {
     exitSelectMode()
   }
 
-  return (
-    <div className="flex flex-col h-full bg-[#0B0A10] text-gray-100 font-sans">
-      
-      {/* Header & Search */}
-      <div className="px-5 pt-6 pb-2 sticky top-0 z-30 bg-[#0B0A10]/95 backdrop-blur-xl">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-2xl font-bold font-display tracking-wide">My Media</h2>
-          <div className="flex items-center gap-3">
-            <button className="p-2.5 rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition">
-              <Search size={18} />
-            </button>
-            <button className="p-2.5 rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition">
-              <SlidersHorizontal size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Search Bar Input (Visual only for now) */}
-        <div className="relative mb-2">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input 
-            type="text" 
-            placeholder="Search" 
-            className="w-full bg-[#15141A] border border-white/5 text-sm rounded-full py-3.5 pl-11 pr-12 outline-none focus:border-primary/50 text-white placeholder-gray-500 transition-all font-medium"
-          />
-          <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
-            <SlidersHorizontal size={16} />
-          </button>
+  // Circular Menu Filter Button helper
+  const FilterButton = ({ id, label, icon: Icon, count, customClass, onClick }) => {
+    const isActive = activeFilter === id;
+    return (
+      <div 
+        onClick={() => { setActiveFilter(id); if (onClick) onClick(); }}
+        className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${customClass} ${isActive ? 'scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] filter' : 'hover:scale-105 hover:brightness-125'}`}
+      >
+        <div className={`relative flex flex-col items-center justify-center w-full h-full`}>
+          <Icon size={28} className={isActive ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" : "text-gray-300"} />
+          <span className={`text-[12px] font-semibold mt-1 ${isActive ? "text-white" : "text-gray-400"}`}>{label}</span>
+          
+          {count !== undefined && (
+            <div className="absolute top-1 right-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-white/10 border border-white/20 rounded-full backdrop-blur-sm shadow-md">
+              {count}
+            </div>
+          )}
         </div>
       </div>
+    );
+  };
 
-      <div className="flex-1 overflow-y-auto pb-24">
-        
-        {/* Pinned Section */}
-        {(!loadingPinned && pinnedPrompts.length > 0) && (
-          <div className="mt-4 mb-8">
-            <div className="flex justify-between items-center px-5 mb-4">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <Pin size={18} className="text-amber-400 fill-amber-400" />
-                Pinned
-              </h3>
-              <button className="text-gray-500 hover:text-white"><MoreHorizontal size={20} /></button>
-            </div>
-            
-            <div className="flex overflow-x-auto gap-4 px-5 pb-4 snap-x scrollbar-hide">
-              {pinnedPrompts.map(item => (
-                <div key={item.id} className="w-[160px] flex-none snap-start animate-fade-in">
-                  <MediaCard
-                    item={item}
-                    isSelected={selectedIds.has(item.id)}
-                    onPin={handlePin}
-                    onDelete={handleDelete}
-                    onPress={() => selectMode ? toggleSelect(item.id) : navigation.navigate('Detail', { promptId: item.id })}
-                    onLongPress={() => enterSelectMode(item.id)}
-                    compact
-                  />
-                </div>
-              ))}
-            </div>
+  return (
+    <div className="flex flex-col h-full bg-[#0B0B0E] text-gray-100 font-sans">
+      {/* Header */}
+      <div className="flex justify-between items-center px-5 py-4 z-30">
+        <h2 className="text-2xl font-bold font-display text-primary-light drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">My Media</h2>
+        {selectMode && (
+          <div className="flex gap-4 items-center animate-fade-in">
+            <button
+              onClick={() => setSelectedIds(new Set(prompts.map(p => p.id)))}
+              className="text-primary-light text-sm font-semibold hover:text-white transition-colors"
+            >
+              Select All
+            </button>
+            <button onClick={bulkDownload} className="text-primary-light hover:text-white transition-colors">
+              <Download size={22} />
+            </button>
+            <button onClick={exitSelectMode} className="text-dark-text-muted hover:text-white transition-colors">
+              <X size={22} />
+            </button>
           </div>
         )}
+      </div>
 
-        {/* Recent Section */}
-        <div className="px-5">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold">Recent</h3>
-            <button className="text-gray-500 hover:text-white"><MoreHorizontal size={20} /></button>
+      {/* Circular Radial Filter UI */}
+      {!selectMode && (
+        <div className="relative w-full max-w-sm mx-auto h-[210px] my-2 flex items-center justify-center">
+          
+          {/* Outer Glowing Ring Container */}
+          <div className="relative w-[260px] h-[260px] transform scale-[0.80] sm:scale-[0.85] rounded-full border-[1px] border-white/10 shadow-[inner_0_0_30px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-white/5 to-transparent">
+            
+            {/* The multi-colored segments behind the icons (approximating pie slices) */}
+            <div className="absolute inset-0 bg-[conic-gradient(from_270deg,rgba(236,72,153,0.1)_0deg,rgba(56,189,248,0.1)_72deg,rgba(234,179,8,0.1)_144deg,rgba(168,85,247,0.1)_216deg,rgba(236,72,153,0.1)_288deg)] opacity-70"></div>
+            
+            {/* The dividing lines for the pie chart effect */}
+            <div className="absolute inset-0 w-full h-full">
+               <div className="absolute top-0 bottom-0 left-[49.5%] w-[1%] bg-[#0B0B0E] transform rotate-[18deg]"></div>
+               <div className="absolute top-0 bottom-0 left-[49.5%] w-[1%] bg-[#0B0B0E] transform rotate-[90deg]"></div>
+               <div className="absolute top-0 bottom-0 left-[49.5%] w-[1%] bg-[#0B0B0E] transform rotate-[162deg]"></div>
+            </div>
+
+            {/* Inner Center Circle ("All") */}
+            <div className="absolute w-[90px] h-[90px] rounded-full bg-[#0B0B0E] z-10 flex items-center justify-center border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+               <div 
+                  onClick={() => setActiveFilter('All')}
+                  className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:scale-105 active:scale-95 transition-all text-white"
+               >
+                 <Folder size={24} className="mb-0.5 text-purple-400" />
+                 <span className="text-sm font-bold">All</span>
+               </div>
+            </div>
+
+            {/* Radial Filter Icons */}
+            {/* Top: Images */}
+            <FilterButton id="Images" label="Images" icon={ImageIcon} count={stats.images} customClass="top-[10px] w-20 h-20 text-emerald-400" />
+            
+            {/* Right: Videos */}
+            <FilterButton id="Videos" label="Videos" icon={Video} count={stats.videos} customClass="right-[15px] top-[75px] w-20 h-20 text-blue-400" />
+            
+            {/* Bottom Right: Pinned */}
+            <FilterButton id="Pinned" label="Pinned" icon={Pin} count={stats.pinned} customClass="right-[35px] bottom-[15px] w-20 h-20 text-yellow-500" />
+            
+            {/* Bottom Left: Pending */}
+            <FilterButton id="Pending" label="Pending" icon={Hourglass} count={stats.pending} customClass="left-[35px] bottom-[15px] w-20 h-20 text-pink-400" />
+            
+            {/* Left: Edits */}
+            <FilterButton id="Edits" label="Edits" icon={Pencil} count={stats.edits} customClass="left-[15px] top-[75px] w-20 h-20 text-purple-400" />
+
           </div>
+        </div>
+      )}
 
-          {/* Filter Tabs matching Screenshot exactly (+ extra type tabs) */}
-          <div className="flex bg-white/5 rounded-full p-1 border border-white/5 mb-6 overflow-x-auto scrollbar-hide snap-x">
-             {FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`flex-none px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 snap-center ${
-                  activeFilter === f
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                {f}
-              </button>
+      {/* Info Text */}
+      <p className="text-center text-gray-500 text-xs font-medium mb-4">
+        Pinned media won't be automatically deleted.
+      </p>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {loading && prompts.length === 0 ? (
+          <div className="flex flex-wrap justify-center gap-3 p-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
             ))}
           </div>
-
-          {loadingRecent && recentPrompts.length === 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : recentPrompts.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 text-sm">No recent media found for this filter.</div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                {recentPrompts.map(item => (
-                  <div key={item.id} className="animate-fade-in">
+        ) : (
+          <div>
+            {prompts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center pt-32 gap-4 animate-fade-in">
+                <div className="text-6xl filter drop-shadow-[0_0_20px_rgba(124,58,237,0.3)]">✨</div>
+                <p className="text-gray-300 font-display font-semibold text-lg">No media yet</p>
+                <p className="text-dark-text-muted text-sm text-center max-w-[250px]">
+                  Generate your first stunning image or video to see it here!
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 p-4 pb-24">
+                {prompts.map(item => (
+                  <div key={item.id} className="animate-fade-in" style={{ animationDelay: '50ms' }}>
                     <MediaCard
                       item={item}
                       isSelected={selectedIds.has(item.id)}
                       onPin={handlePin}
                       onDelete={handleDelete}
-                      onPress={() => selectMode ? toggleSelect(item.id) : navigation.navigate('Detail', { promptId: item.id })}
+                      onPress={() => selectMode
+                        ? toggleSelect(item.id)
+                        : navigation.navigate('Detail', { promptId: item.id })
+                      }
                       onLongPress={() => enterSelectMode(item.id)}
-                      compact
                     />
                   </div>
                 ))}
               </div>
-              
-              {hasMore && (
-                <div className="text-center mt-6 mb-4">
-                  <button
-                    onClick={() => fetchRecent(page + 1)}
-                    className="px-6 py-2.5 bg-white/5 border border-white/10 text-gray-300 rounded-lg text-sm font-semibold hover:bg-white/10 transition-colors"
-                  >
-                    Load More
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
+            )}
+            {hasMore && !loading && (
+              <div className="text-center py-4">
+                <button
+                  onClick={() => fetchPrompts(page + 1)}
+                  className="px-6 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-light transition-colors"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Selection Bar */}
@@ -303,7 +291,7 @@ export function DashboardScreen({ navigation, route }) {
           </p>
           <button
             onClick={bulkDownload}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-light transition-all shadow-lg shadow-primary/30"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-light transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/30"
           >
             <Download size={18} />
             Download
