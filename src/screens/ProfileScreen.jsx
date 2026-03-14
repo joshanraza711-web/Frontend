@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/useAuthStore'
-import { LogOut, Shield, Loader } from 'lucide-react'
+import { ArrowLeft, Image as ImageIcon, Video, Pencil, Pin, LogOut, Shield } from 'lucide-react'
 
 export function ProfileScreen({ navigation }) {
   const { user, clearAuth } = useAuthStore()
-  const [stats, setStats] = useState(null)
+  const [stats, setStats] = useState({
+    total: 0, completed: 0, pending: 0, failed: 0,
+    images: 0, videos: 0, edits: 0, pinned: 0
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,16 +17,8 @@ export function ProfileScreen({ navigation }) {
 
   async function loadStats() {
     try {
-      const [all, completed, failed] = await Promise.all([
-        api.getPrompts({ limit: 1 }),
-        api.getPrompts({ limit: 1, status: 'completed' }),
-        api.getPrompts({ limit: 1, status: 'failed' })
-      ])
-      setStats({
-        total: all.pagination?.total || 0,
-        completed: completed.pagination?.total || 0,
-        failed: failed.pagination?.total || 0
-      })
+      const data = await api.getMyStats()
+      setStats(data)
     } catch (e) {
       console.error(e)
     }
@@ -36,61 +31,148 @@ export function ProfileScreen({ navigation }) {
     }
   }
 
-  const avatarLetter = user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'
+  const avatarLetter = user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'
+  
+  const successRate = stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0
+  const pixels = (stats.completed * 5.2).toFixed(1)
 
   return (
-    <div className="flex flex-col h-full bg-dark-bg overflow-y-auto">
-      {/* Header */}
-      <div className="text-center py-8 border-b border-dark-border">
-        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-3">
-          <span className="text-2xl font-bold text-white">{avatarLetter}</span>
+    <div className="flex flex-col h-full bg-dark-bg font-sans overflow-y-auto text-white pb-24">
+      
+      {/* Top Navigation */}
+      <div className="flex items-center gap-4 p-6 pt-8">
+        <button onClick={() => navigation.navigate('Dashboard')} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition">
+          <ArrowLeft size={20} className="text-gray-300" />
+        </button>
+        <div>
+          <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Account</p>
+          <h1 className="text-xl font-bold font-display">Profile</h1>
         </div>
-        <h2 className="text-xl font-bold text-white">{user?.name || 'User'}</h2>
-        <p className="text-dark-text-muted text-sm">{user?.email}</p>
       </div>
 
-      {/* Stats */}
-      <div className="p-6">
-        {loading ? (
-          <div className="flex justify-center">
-            <Loader className="w-6 h-6 text-primary spinner" />
+      <div className="px-6 max-w-sm mx-auto w-full space-y-8 animate-slide-up">
+        
+        {/* User Info */}
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+            {avatarLetter}
           </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[
-              { label: 'Total', value: stats?.total || 0, icon: '📊', color: 'text-primary' },
-              { label: 'Done', value: stats?.completed || 0, icon: '✅', color: 'text-green-500' },
-              { label: 'Failed', value: stats?.failed || 0, icon: '❌', color: 'text-red-500' }
-            ].map(s => (
-              <div key={s.label} className="bg-dark-card rounded-lg p-4 border border-dark-border text-center">
-                <div className="text-2xl mb-1">{s.icon}</div>
-                <p className="text-lg font-bold text-white">{s.value}</p>
-                <p className="text-xs text-dark-text-muted">{s.label}</p>
+          <div>
+            <h2 className="text-lg font-bold">{user?.name || 'AutoFlow User'}</h2>
+            <p className="text-xs text-gray-400">Pro Plan • Since Mar 2026</p>
+          </div>
+        </div>
+
+        {/* Overview */}
+        <div>
+          <h3 className="text-[10px] text-gray-600 font-bold tracking-widest uppercase mb-3 ml-1">Overview</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+              <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Total</p>
+              <p className="text-2xl font-bold">{loading ? '-' : stats.total}</p>
+            </div>
+            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+              <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Completed</p>
+              <p className="text-2xl font-bold">{loading ? '-' : stats.completed}</p>
+            </div>
+            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+              <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Pending</p>
+              <p className="text-2xl font-bold">{loading ? '-' : stats.pending}</p>
+            </div>
+            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+              <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Failed</p>
+              <p className="text-2xl font-bold">{loading ? '-' : stats.failed}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Breakdown */}
+        <div>
+          <h3 className="text-[10px] text-gray-600 font-bold tracking-widest uppercase mb-3 ml-1">Breakdown</h3>
+          <div className="glass-panel rounded-3xl border border-white/5 bg-[#12121A] divide-y divide-white/5">
+            <div className="flex items-center justify-between p-4 px-5">
+              <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
+                <ImageIcon size={16} className="text-gray-500" /> Images
               </div>
-            ))}
+              <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.images}</span>
+            </div>
+            <div className="flex items-center justify-between p-4 px-5">
+              <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
+                <Video size={16} className="text-gray-500" /> Videos
+              </div>
+              <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.videos}</span>
+            </div>
+            <div className="flex items-center justify-between p-4 px-5">
+              <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
+                <Pencil size={16} className="text-gray-500" /> Edits
+              </div>
+              <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.edits}</span>
+            </div>
+            <div className="flex items-center justify-between p-4 px-5">
+              <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
+                <Pin size={16} className="text-gray-500" /> Pinned
+              </div>
+              <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.pinned}</span>
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Admin Link */}
-        {user?.is_admin && (
+        {/* Performance */}
+        <div>
+          <h3 className="text-[10px] text-gray-600 font-bold tracking-widest uppercase mb-3 ml-1">Performance</h3>
+          <div className="glass-panel rounded-3xl p-5 border border-white/5 bg-[#12121A]">
+            <div className="flex justify-between items-end mb-3">
+              <span className="text-xs text-gray-500 font-medium">Success Rate</span>
+              <span className="text-sm font-bold text-cyan-400">{successRate}%</span>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="w-full h-1 bg-white/10 rounded-full mb-6 overflow-hidden">
+              <div 
+                className="h-full bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)] transition-all duration-1000" 
+                style={{ width: `${successRate}%` }}
+              ></div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center pt-1 border-t border-white/5 mt-2">
+              <div className="pt-3">
+                <p className="text-sm font-bold text-white">{pixels}k</p>
+                <p className="text-[8px] text-gray-500 uppercase tracking-widest font-bold mt-1">Pixels</p>
+              </div>
+              <div className="pt-3">
+                <p className="text-sm font-bold text-white">{loading ? '-' : stats.total}</p>
+                <p className="text-[8px] text-gray-500 uppercase tracking-widest font-bold mt-1">Generations</p>
+              </div>
+              <div className="pt-3">
+                <p className="text-sm font-bold text-white">99.8%</p>
+                <p className="text-[8px] text-gray-500 uppercase tracking-widest font-bold mt-1">Uptime</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="pt-2 space-y-3 pb-8">
+          {user?.is_admin && (
+            <button
+              onClick={() => navigation.navigate('Admin')}
+              className="w-full flex items-center justify-center gap-3 p-4 glass-panel bg-primary/10 border-primary/20 rounded-2xl text-primary-light hover:bg-primary/20 transition-all font-semibold"
+            >
+              <Shield size={18} />
+              <span>Admin Dashboard</span>
+              <span>→</span>
+            </button>
+          )}
+
           <button
-            onClick={() => navigation.navigate('Admin')}
-            className="w-full flex items-center gap-3 p-4 bg-dark-card border border-dark-border rounded-lg text-primary-light hover:bg-dark-border transition-colors mb-4"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-2xl text-red-500 font-bold transition-colors"
           >
-            <Shield size={20} />
-            <span className="flex-1 text-left font-semibold">Admin Dashboard</span>
-            <span>→</span>
+            <LogOut size={18} />
+            Logout
           </button>
-        )}
+        </div>
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-red-900/20 hover:bg-red-900/30 border border-red-900 rounded-lg text-red-400 font-semibold transition-colors"
-        >
-          <LogOut size={20} />
-          Logout
-        </button>
       </div>
     </div>
   )

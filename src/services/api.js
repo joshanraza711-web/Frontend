@@ -38,6 +38,8 @@ export const api = {
     return request(`/prompts${qs ? `?${qs}` : ''}`)
   },
 
+  getMyStats: () => request('/prompts/stats'),
+
   getPrompt: (id) => request(`/prompts/${id}`),
 
   deletePrompt: (id) => request(`/prompts/${id}`, { method: 'DELETE' }),
