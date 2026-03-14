@@ -67,19 +67,31 @@ export function ProfileScreen({ navigation }) {
         <div>
           <h3 className="text-[10px] text-gray-600 font-bold tracking-widest uppercase mb-3 ml-1">Overview</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'All' })}
+              className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A] cursor-pointer hover:bg-white/5 active:scale-95 transition-all"
+            >
               <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Total</p>
               <p className="text-2xl font-bold">{loading ? '-' : stats.total}</p>
             </div>
-            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Completed' })}
+              className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A] cursor-pointer hover:bg-white/5 active:scale-95 transition-all"
+            >
               <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Completed</p>
               <p className="text-2xl font-bold">{loading ? '-' : stats.completed}</p>
             </div>
-            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Pending' })}
+              className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A] cursor-pointer hover:bg-white/5 active:scale-95 transition-all"
+            >
               <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Pending</p>
               <p className="text-2xl font-bold">{loading ? '-' : stats.pending}</p>
             </div>
-            <div className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A]">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Failed' })}
+              className="glass-panel rounded-2xl p-4 py-5 border border-white/5 bg-[#12121A] cursor-pointer hover:bg-white/5 active:scale-95 transition-all"
+            >
               <p className="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Failed</p>
               <p className="text-2xl font-bold">{loading ? '-' : stats.failed}</p>
             </div>
@@ -89,26 +101,38 @@ export function ProfileScreen({ navigation }) {
         {/* Breakdown */}
         <div>
           <h3 className="text-[10px] text-gray-600 font-bold tracking-widest uppercase mb-3 ml-1">Breakdown</h3>
-          <div className="glass-panel rounded-3xl border border-white/5 bg-[#12121A] divide-y divide-white/5">
-            <div className="flex items-center justify-between p-4 px-5">
+          <div className="glass-panel rounded-3xl border border-white/5 bg-[#12121A] divide-y divide-white/5 overflow-hidden">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Images' })}
+              className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors"
+            >
               <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
                 <ImageIcon size={16} className="text-gray-500" /> Images
               </div>
               <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.images}</span>
             </div>
-            <div className="flex items-center justify-between p-4 px-5">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Videos' })}
+              className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors"
+            >
               <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
                 <Video size={16} className="text-gray-500" /> Videos
               </div>
               <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.videos}</span>
             </div>
-            <div className="flex items-center justify-between p-4 px-5">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Edits' })}
+              className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors"
+            >
               <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
                 <Pencil size={16} className="text-gray-500" /> Edits
               </div>
               <span className="text-sm font-bold text-gray-300">{loading ? '-' : stats.edits}</span>
             </div>
-            <div className="flex items-center justify-between p-4 px-5">
+            <div 
+              onClick={() => navigation.navigate('Dashboard', { filter: 'Pinned' })}
+              className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors"
+            >
               <div className="flex items-center gap-3 text-sm font-medium text-gray-300">
                 <Pin size={16} className="text-gray-500" /> Pinned
               </div>
