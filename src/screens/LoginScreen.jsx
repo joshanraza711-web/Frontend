@@ -28,48 +28,65 @@ export function LoginScreen({ navigation }) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-dark-bg px-6">
-      <div className="w-full max-w-sm">
-        <h1 className="text-5xl font-bold text-white text-center mb-1 tracking-wider">✦ AutoFlow</h1>
-        <p className="text-center text-dark-text-muted text-sm mb-12">AI Media Platform</p>
+    <div className="flex flex-col h-full bg-dark-bg font-sans overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-sm mx-auto min-h-full">
+        <div className="animate-slide-up w-full text-center">
+          <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-3xl mb-4 border border-primary/20 shadow-[0_0_30px_rgba(124,58,237,0.2)]">
+            <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">✦</span>
+          </div>
+          <h1 className="text-5xl font-bold font-display text-white mb-2 tracking-tight">AutoFlow</h1>
+          <p className="text-dark-text-muted text-sm font-medium tracking-wider uppercase mb-12">AI Media Platform</p>
+        </div>
 
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-4 rounded-xl bg-dark-card border border-dark-border text-white placeholder-dark-text-muted focus:outline-none focus:border-primary transition-colors"
-          />
+        <div className="w-full space-y-4 animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-blue-500/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="relative w-full px-5 py-4 rounded-2xl glass-panel text-white placeholder-dark-text-muted focus:outline-none focus:border-primary/50 transition-all text-base shadow-inner"
+            />
+          </div>
           
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-4 rounded-xl bg-dark-card border border-dark-border text-white placeholder-dark-text-muted focus:outline-none focus:border-primary transition-colors"
-          />
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-blue-500/30 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="relative w-full px-5 py-4 rounded-2xl glass-panel text-white placeholder-dark-text-muted focus:outline-none focus:border-primary/50 transition-all text-base shadow-inner"
+            />
+          </div>
 
           {error && (
-            <div className="px-4 py-2 bg-red-900/20 border border-red-900 rounded-lg text-red-400 text-sm">
-              {error}
+            <div className="px-5 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm animate-fade-in flex items-center gap-2">
+              <span>⚠️</span> {error}
             </div>
           )}
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full py-4 bg-primary hover:bg-primary-light active:bg-primary-light transition-colors text-white font-bold rounded-xl disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading && <Loader size={18} className="spinner" />}
-            Sign In
-          </button>
+          <div className="pt-2">
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className="group relative w-full py-4 rounded-2xl font-bold text-white text-lg disabled:opacity-70 disabled:cursor-not-allowed transition-all overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-500 group-hover:from-primary-light group-hover:to-blue-400 transition-colors"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-500 blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
+              <div className="relative flex items-center justify-center gap-2">
+                {loading && <Loader size={20} className="spinner" />}
+                Sign In
+              </div>
+            </button>
+          </div>
 
           <button
             onClick={() => navigation.navigate('Register')}
-            className="w-full text-center mt-6 text-dark-text-muted text-sm hover:text-primary-light transition-colors"
+            className="w-full text-center mt-8 text-dark-text-muted text-sm hover:text-white transition-colors"
           >
-            Don't have an account? <span className="text-primary-light font-semibold">Register</span>
+            Don't have an account? <span className="text-primary-light font-semibold hover:underline underline-offset-4">Register Now</span>
           </button>
         </div>
       </div>

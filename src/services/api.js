@@ -42,6 +42,9 @@ export const api = {
 
   deletePrompt: (id) => request(`/prompts/${id}`, { method: 'DELETE' }),
 
+  pinPrompt: (id, is_pinned) => 
+    request(`/prompts/${id}/pin`, { method: 'PATCH', body: JSON.stringify({ is_pinned }) }),
+
   getMedia: (promptId) => request(`/media/${promptId}`),
 
   bulkDownload: (promptIds) =>

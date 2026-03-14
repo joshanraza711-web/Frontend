@@ -58,6 +58,30 @@ export function DashboardScreen({ navigation }) {
     return () => clearInterval(pollRef.current)
   }, [prompts, activeFilter])
 
+  async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this media?')) return
+    try {
+      await api.deletePrompt(id)
+      setPrompts(prev => prev.filter(p => p.id !== id))
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    } catch (err) {
+      alert('Delete failed: ' + err.message)
+    }
+  }
+
+  async function handlePin(id, is_pinned) {
+    try {
+      await api.pinPrompt(id, !is_pinned)
+      setPrompts(prev => prev.map(p => p.id === id ? { ...p, is_pinned: !is_pinned } : p))
+    } catch (err) {
+      alert('Pin failed: ' + err.message)
+    }
+  }
+
   function toggleSelect(id) {
     setSelectedIds(prev => {
       const next = new Set(prev)
@@ -94,22 +118,22 @@ export function DashboardScreen({ navigation }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-dark-bg">
+    <div className="flex flex-col h-full bg-dark-bg text-gray-100 font-sans">
       {/* Header */}
-      <div className="flex justify-between items-center px-5 py-3 border-b border-dark-border">
-        <h2 className="text-2xl font-bold">My Media</h2>
+      <div className="flex justify-between items-center px-5 py-4 sticky top-0 z-30 bg-dark-bg/80 backdrop-blur-xl border-b border-white/5">
+        <h2 className="text-2xl font-bold font-display text-gradient">My Media</h2>
         {selectMode && (
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-4 items-center animate-fade-in">
             <button
               onClick={() => setSelectedIds(new Set(prompts.map(p => p.id)))}
-              className="text-primary-light text-sm font-semibold hover:opacity-80"
+              className="text-primary-light text-sm font-semibold hover:text-white transition-colors"
             >
-              All
+              Select All
             </button>
-            <button onClick={bulkDownload} className="text-primary-light hover:opacity-80">
+            <button onClick={bulkDownload} className="text-primary-light hover:text-white transition-colors">
               <Download size={22} />
             </button>
-            <button onClick={exitSelectMode} className="text-dark-text-muted hover:opacity-80">
+            <button onClick={exitSelectMode} className="text-dark-text-muted hover:text-white transition-colors">
               <X size={22} />
             </button>
           </div>
@@ -117,15 +141,16 @@ export function DashboardScreen({ navigation }) {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-dark-border scrollbar-hide">
+      <div className="flex gap-2.5 overflow-x-auto px-5 py-3 sticky top-[65px] z-20 bg-dark-bg/90 backdrop-blur-md border-b border-white/5 scrollbar-hide select-none transition-all">
         {FILTERS.map(f => (
           <button
             key={f}
             onClick={() => setActiveFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${activeFilter === f
-                ? 'bg-primary text-white'
-                : 'bg-dark-card text-dark-text-muted hover:text-white'
-              }`}
+            className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 ${
+              activeFilter === f
+                ? 'bg-primary text-white shadow-[0_0_15px_rgba(124,58,237,0.4)] scale-105'
+                : 'glass-panel text-dark-text-muted hover:text-white hover:bg-white/10'
+            }`}
           >
             {f}
           </button>
@@ -143,24 +168,29 @@ export function DashboardScreen({ navigation }) {
         ) : (
           <div>
             {prompts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center pt-20 gap-2">
-                <div className="text-5xl text-gray-700">🖼️</div>
-                <p className="text-dark-text-muted font-semibold">No media yet</p>
-                <p className="text-dark-text-muted text-sm">Generate your first image or video!</p>
+              <div className="flex flex-col items-center justify-center pt-32 gap-4 animate-fade-in">
+                <div className="text-6xl filter drop-shadow-[0_0_20px_rgba(124,58,237,0.3)]">✨</div>
+                <p className="text-gray-300 font-display font-semibold text-lg">No media yet</p>
+                <p className="text-dark-text-muted text-sm text-center max-w-[250px]">
+                  Generate your first stunning image or video to see it here!
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 p-3 pb-20">
+              <div className="grid grid-cols-2 gap-4 p-4 pb-24">
                 {prompts.map(item => (
-                  <MediaCard
-                    key={item.id}
-                    item={item}
-                    isSelected={selectedIds.has(item.id)}
-                    onPress={() => selectMode
-                      ? toggleSelect(item.id)
-                      : navigation.navigate('Detail', { promptId: item.id })
-                    }
-                    onLongPress={() => enterSelectMode(item.id)}
-                  />
+                  <div key={item.id} className="animate-fade-in" style={{ animationDelay: '50ms' }}>
+                    <MediaCard
+                      item={item}
+                      isSelected={selectedIds.has(item.id)}
+                      onPin={handlePin}
+                      onDelete={handleDelete}
+                      onPress={() => selectMode
+                        ? toggleSelect(item.id)
+                        : navigation.navigate('Detail', { promptId: item.id })
+                      }
+                      onLongPress={() => enterSelectMode(item.id)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -180,11 +210,13 @@ export function DashboardScreen({ navigation }) {
 
       {/* Selection Bar */}
       {selectMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 max-w-md mx-auto flex items-center justify-between px-4 py-3 bg-dark-card border border-primary rounded-2xl m-4 bg-opacity-95">
-          <p className="text-white font-semibold">{selectedIds.size} selected</p>
+        <div className="fixed bottom-[85px] left-0 right-0 max-w-md mx-auto flex items-center justify-between px-5 py-4 glass-panel border-primary/50 shadow-[0_10px_40px_rgba(124,58,237,0.2)] rounded-3xl m-4 animate-slide-up z-50">
+          <p className="text-white font-semibold flex items-center gap-2">
+            <span className="bg-primary/20 text-primary-light px-2 py-0.5 rounded-md">{selectedIds.size}</span> selected
+          </p>
           <button
             onClick={bulkDownload}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-light transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary-light transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/30"
           >
             <Download size={18} />
             Download
