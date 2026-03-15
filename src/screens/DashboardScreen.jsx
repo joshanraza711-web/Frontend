@@ -140,14 +140,14 @@ export function DashboardScreen({ navigation, route }) {
     return (
       <div 
         onClick={() => { setActiveFilter(id); if (onClick) onClick(); }}
-        className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${customClass} ${isActive ? 'scale-110 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] filter' : 'hover:scale-105 hover:brightness-125'}`}
+        className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${customClass} ${isActive ? 'scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] filter' : 'hover:scale-105 hover:brightness-125'}`}
       >
         <div className={`relative flex flex-col items-center justify-center w-full h-full`}>
-          <Icon size={28} className={isActive ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" : "text-gray-300"} />
-          <span className={`text-[12px] font-semibold mt-1 ${isActive ? "text-white" : "text-gray-400"}`}>{label}</span>
+          <Icon size={18} className={isActive ? "text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]" : "text-gray-300"} />
+          <span className={`text-[9px] font-semibold mt-0.5 ${isActive ? "text-white" : "text-gray-400"}`}>{label}</span>
           
           {count !== undefined && (
-            <div className="absolute top-1 right-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-white/10 border border-white/20 rounded-full backdrop-blur-sm shadow-md">
+            <div className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center w-4 h-4 text-[8px] font-bold text-white bg-white/15 border border-white/20 rounded-full backdrop-blur-sm">
               {count}
             </div>
           )}
@@ -159,8 +159,8 @@ export function DashboardScreen({ navigation, route }) {
   return (
     <div className="flex flex-col h-full bg-[#0B0B0E] text-gray-100 font-sans">
       {/* Header */}
-      <div className="flex justify-between items-center px-5 py-4 z-30">
-        <h2 className="text-2xl font-bold font-display text-primary-light drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">My Media</h2>
+      <div className="flex justify-between items-center px-5 py-3 z-30">
+        <h2 className="text-xl font-bold font-display text-primary-light drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">My Media</h2>
         {selectMode && (
           <div className="flex gap-4 items-center animate-fade-in">
             <button
@@ -170,23 +170,23 @@ export function DashboardScreen({ navigation, route }) {
               Select All
             </button>
             <button onClick={bulkDownload} className="text-primary-light hover:text-white transition-colors">
-              <Download size={22} />
+              <Download size={20} />
             </button>
             <button onClick={exitSelectMode} className="text-dark-text-muted hover:text-white transition-colors">
-              <X size={22} />
+              <X size={20} />
             </button>
           </div>
         )}
       </div>
 
-      {/* Circular Radial Filter UI */}
+      {/* Circular Radial Filter UI — Compact */}
       {!selectMode && (
-        <div className="relative w-full max-w-sm mx-auto h-[210px] my-2 flex items-center justify-center">
+        <div className="relative w-full max-w-xs mx-auto h-[150px] flex items-center justify-center">
           
           {/* Outer Glowing Ring Container */}
-          <div className="relative w-[260px] h-[260px] transform scale-[0.80] sm:scale-[0.85] rounded-full border-[1px] border-white/10 shadow-[inner_0_0_30px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-white/5 to-transparent">
+          <div className="relative w-[190px] h-[190px] rounded-full border-[1px] border-white/10 shadow-[inner_0_0_20px_rgba(0,0,0,0.8)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-white/5 to-transparent">
             
-            {/* The multi-colored segments behind the icons (approximating pie slices) */}
+            {/* The multi-colored segments behind the icons */}
             <div className="absolute inset-0 bg-[conic-gradient(from_270deg,rgba(236,72,153,0.1)_0deg,rgba(56,189,248,0.1)_72deg,rgba(234,179,8,0.1)_144deg,rgba(168,85,247,0.1)_216deg,rgba(236,72,153,0.1)_288deg)] opacity-70"></div>
             
             {/* The dividing lines for the pie chart effect */}
@@ -197,31 +197,31 @@ export function DashboardScreen({ navigation, route }) {
             </div>
 
             {/* Inner Center Circle ("All") */}
-            <div className="absolute w-[90px] h-[90px] rounded-full bg-[#0B0B0E] z-10 flex items-center justify-center border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+            <div className="absolute w-[60px] h-[60px] rounded-full bg-[#0B0B0E] z-10 flex items-center justify-center border-2 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.4)]">
                <div 
                   onClick={() => setActiveFilter('All')}
                   className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:scale-105 active:scale-95 transition-all text-white"
                >
-                 <Folder size={24} className="mb-0.5 text-purple-400" />
-                 <span className="text-sm font-bold">All</span>
+                 <Folder size={18} className="mb-0.5 text-purple-400" />
+                 <span className="text-[10px] font-bold">All</span>
                </div>
             </div>
 
-            {/* Radial Filter Icons */}
+            {/* Radial Filter Icons — Compact positions */}
             {/* Top: Images */}
-            <FilterButton id="Images" label="Images" icon={ImageIcon} count={stats.images} customClass="top-[10px] w-20 h-20 text-emerald-400" />
+            <FilterButton id="Images" label="Images" icon={ImageIcon} count={stats.images} customClass="top-[5px] w-14 h-14 text-emerald-400" />
             
             {/* Right: Videos */}
-            <FilterButton id="Videos" label="Videos" icon={Video} count={stats.videos} customClass="right-[15px] top-[75px] w-20 h-20 text-blue-400" />
+            <FilterButton id="Videos" label="Videos" icon={Video} count={stats.videos} customClass="right-[8px] top-[52px] w-14 h-14 text-blue-400" />
             
             {/* Bottom Right: Pinned */}
-            <FilterButton id="Pinned" label="Pinned" icon={Pin} count={stats.pinned} customClass="right-[35px] bottom-[15px] w-20 h-20 text-yellow-500" />
+            <FilterButton id="Pinned" label="Pinned" icon={Pin} count={stats.pinned} customClass="right-[25px] bottom-[8px] w-14 h-14 text-yellow-500" />
             
             {/* Bottom Left: Pending */}
-            <FilterButton id="Pending" label="Pending" icon={Hourglass} count={stats.pending} customClass="left-[35px] bottom-[15px] w-20 h-20 text-pink-400" />
+            <FilterButton id="Pending" label="Pending" icon={Hourglass} count={stats.pending} customClass="left-[25px] bottom-[8px] w-14 h-14 text-pink-400" />
             
             {/* Left: Edits */}
-            <FilterButton id="Edits" label="Edits" icon={Pencil} count={stats.edits} customClass="left-[15px] top-[75px] w-20 h-20 text-purple-400" />
+            <FilterButton id="Edits" label="Edits" icon={Pencil} count={stats.edits} customClass="left-[8px] top-[52px] w-14 h-14 text-purple-400" />
 
           </div>
         </div>
