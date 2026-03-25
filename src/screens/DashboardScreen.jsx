@@ -124,6 +124,10 @@ export function DashboardScreen({ navigation, route }) {
   async function bulkDownload() {
     const ids = [...selectedIds]
     if (ids.length === 0) return
+
+    // Show download ad immediately when user clicks the download button
+    if (adSettings.download_ad) setShowDownloadAd(true)
+
     try {
       const resp = await api.bulkDownload(ids)
       if (resp?.download_url) {
@@ -131,8 +135,6 @@ export function DashboardScreen({ navigation, route }) {
         a.href = resp.download_url
         a.download = `autoflow-media-${Date.now()}.zip`
         a.click()
-        // Show download ad if enabled for this user
-        if (adSettings.download_ad) setShowDownloadAd(true)
       }
     } catch (e) {
       alert('Download failed: ' + e.message)
@@ -164,8 +166,8 @@ export function DashboardScreen({ navigation, route }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0B0B0E] text-gray-100 font-sans">
-      {/* Propeller Ad — fires once after a download */}
-      <PropellerAd show={showDownloadAd} />
+      {/* Propeller Ad — fires on every Download button click */}
+      <PropellerAd show={showDownloadAd} onAdShown={() => setShowDownloadAd(false)} />
       {/* Header */}
       <div className="flex justify-between items-center px-5 py-3 z-30">
         <h2 className="text-xl font-bold font-display text-primary-light drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">My Media</h2>

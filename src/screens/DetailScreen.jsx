@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { StatusBadge } from '../components/StatusBadge.jsx'
 import { Download, Share2, AlertCircle, Loader } from 'lucide-react'
+import { PropellerAd } from '../components/PropellerAd.jsx'
+import { useAdSettings } from '../hooks/useAdSettings.js'
 
 export function DetailScreen({ route, navigation }) {
   const { promptId } = route.params
   const [prompt, setPrompt] = useState(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
+  const [showDownloadAd, setShowDownloadAd] = useState(false)
+  const { adSettings } = useAdSettings()
 
   useEffect(() => {
     loadPrompt()
@@ -27,6 +31,10 @@ export function DetailScreen({ route, navigation }) {
 
   async function handleDownload() {
     if (!prompt?.output_urls?.[0]) return
+
+    // Show download ad immediately when user clicks Download
+    if (adSettings.download_ad) setShowDownloadAd(true)
+
     setDownloading(true)
     try {
       const url = prompt.output_urls[0]
@@ -51,7 +59,6 @@ export function DetailScreen({ route, navigation }) {
           url: prompt.output_urls[0]
         })
       } else {
-        // Fallback: copy to clipboard
         await navigator.clipboard.writeText(prompt.output_urls[0])
         alert('Link copied to clipboard!')
       }
@@ -74,31 +81,27 @@ export function DetailScreen({ route, navigation }) {
 
   return (
     <div className="flex flex-col h-full bg-dark-bg overflow-y-auto">
+      {/* Propeller Ad — fires on every Download button click */}
+      <PropellerAd show={showDownloadAd} onAdShown={() => setShowDownloadAd(false)} />
+
       {/* Media Display */}
       <div className="w-full bg-dark-card border-b border-dark-border flex items-center justify-center" style={{ aspectRatio: '1' }}>
         {imageUrl ? (
           prompt.mode === 'VIDEO' ? (
-            <video 
-              src={imageUrl} 
+            <video
+              src={imageUrl}
               className="w-full h-full object-contain"
-              autoPlay
-              loop
-              controls
-              playsInline
+              autoPlay loop controls playsInline
             />
           ) : (
-            <img 
-              src={imageUrl} 
-              alt={prompt.prompt}
-              className="w-full h-full object-contain"
-            />
+            <img src={imageUrl} alt={prompt.prompt} className="w-full h-full object-contain" />
           )
         ) : (
           <div className="flex flex-col items-center gap-3">
             <div className="text-6xl">🖼️</div>
             <p className="text-dark-text-muted">
               {prompt.status === 'pending' || prompt.status === 'processing'
-                ? 'Generating...' 
+                ? 'Generating...'
                 : 'No output yet'}
             </p>
           </div>
@@ -112,9 +115,9 @@ export function DetailScreen({ route, navigation }) {
             <StatusBadge status={prompt.status} />
             <span className="text-xs text-dark-text-muted">{prompt.mode} · {prompt.ratio}</span>
           </div>
-          
+
           <p className="text-sm text-white leading-relaxed">{prompt.prompt}</p>
-          
+
           <p className="text-xs text-dark-text-muted">
             Created {new Date(prompt.created_at).toLocaleString()}
           </p>

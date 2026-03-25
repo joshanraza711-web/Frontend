@@ -25,6 +25,9 @@ export function GenerateScreen({ navigation }) {
       return
     }
 
+    // Show ad immediately when user clicks Generate (before API call)
+    if (adSettings.generation_ad) setShowAd(true)
+
     setLoading(true)
     setError('')
     try {
@@ -33,8 +36,6 @@ export function GenerateScreen({ navigation }) {
         body.input_image_url = inputImageUrl.trim()
       }
       await api.createPrompt(body)
-      // Show generation ad if enabled for this user
-      if (adSettings.generation_ad) setShowAd(true)
       setPrompt('')
       setInputImageUrl('')
       alert('✓ Queued! Your prompt has been added to the queue.')
@@ -67,8 +68,8 @@ export function GenerateScreen({ navigation }) {
 
   return (
     <div className="flex flex-col h-full bg-dark-bg font-sans overflow-y-auto">
-      {/* Propeller Ad — fires once after successful generation */}
-      <PropellerAd show={showAd} />
+      {/* Propeller Ad — fires on Generate button click */}
+      <PropellerAd show={showAd} onAdShown={() => setShowAd(false)} />
       <div className="flex-1 p-6 max-w-2xl mx-auto w-full">
         <div className="animate-slide-up">
           <h1 className="text-4xl font-bold font-display text-gradient mb-2 drop-shadow-sm">Create</h1>
