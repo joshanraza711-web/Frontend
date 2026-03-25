@@ -1,23 +1,42 @@
+import { useEffect, useRef } from 'react'
+
 /**
  * PropellerAd
- * Injects the Propeller Ads tag script every time `show` flips to true.
- * The ad network handles deduplication / capping on their side.
+ * Injects the Propeller Ads tag script inside a useEffect (safe for React).
+ * Fires every time `show` changes from false → true.
+ * After injecting, calls onAdShown() so the parent can reset show=false
+ * (which allows re-triggering on the next user action).
  *
- * Usage:
- *   <PropellerAd show={adSettings.generation_ad} onAdShown={() => setShowAd(false)} />
+ * IMPORTANT: The script is appended to <body> — the ad network handles
+ * rendering the actual popup/overlay on their side.
  */
 export function PropellerAd({ show, onAdShown }) {
-  if (!show) return null
+  const prevShow = useRef(false)
 
-  // Inject immediately on render when show=true
-  const container = [document.documentElement, document.body].filter(Boolean).pop()
-  const s = document.createElement('script')
-  s.dataset.zone = '10781216'
-  s.src = 'https://al5sm.com/tag.min.js'
-  container.appendChild(s)
+  useEffect(() => {
+    // Only fire when show transitions false → true
+    if (!show || prevShow.current === true) {
+      prevShow.current = show
+      return
+    }
+    prevShow.current = true
 
-  // Notify parent so it can reset show=false (allows re-triggering next time)
-  if (onAdShown) setTimeout(onAdShown, 0)
+    // Inject the Propeller Ads script tag into <body>
+    const s = document.createElement('script')
+    s.dataset.zone = '10781216'
+    s.src = 'https://al5sm.com/tag.min.js'
+    s.async = true
+    document.body.appendChild(s)
+
+    // Reset parent state after a short delay so ad has time to load,
+    // and so the next Generate/Download click can re-trigger
+    const timer = setTimeout(() => {
+      prevShow.current = false
+      if (onAdShown) onAdShown()
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [show]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null
 }

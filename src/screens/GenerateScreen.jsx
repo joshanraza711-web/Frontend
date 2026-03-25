@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../services/api'
-import { Zap, Loader, Image as ImageIcon, Monitor, Phone, Pencil, Upload } from 'lucide-react'
+import { Zap, Loader, Image as ImageIcon, Monitor, Phone, Pencil, Upload, Check } from 'lucide-react'
 import { PropellerAd } from '../components/PropellerAd.jsx'
 import { useAdSettings } from '../hooks/useAdSettings.js'
 
@@ -12,6 +12,8 @@ export function GenerateScreen({ navigation }) {
   const [error, setError] = useState('')
   const [inputImageUrl, setInputImageUrl] = useState('')
   const [showAd, setShowAd] = useState(false)
+
+  // Fetch user's ad settings — defaults to true while loading (fail open)
   const { adSettings } = useAdSettings()
 
   async function handleSubmit() {
@@ -25,8 +27,10 @@ export function GenerateScreen({ navigation }) {
       return
     }
 
-    // Show ad immediately when user clicks Generate (before API call)
-    if (adSettings.generation_ad) setShowAd(true)
+    // Trigger ad FIRST — before API call — so it shows while generation queues
+    if (adSettings.generation_ad) {
+      setShowAd(true)
+    }
 
     setLoading(true)
     setError('')
@@ -70,6 +74,7 @@ export function GenerateScreen({ navigation }) {
     <div className="flex flex-col h-full bg-dark-bg font-sans overflow-y-auto">
       {/* Propeller Ad — fires on Generate button click */}
       <PropellerAd show={showAd} onAdShown={() => setShowAd(false)} />
+
       <div className="flex-1 p-6 max-w-2xl mx-auto w-full">
         <div className="animate-slide-up">
           <h1 className="text-4xl font-bold font-display text-gradient mb-2 drop-shadow-sm">Create</h1>
@@ -128,8 +133,9 @@ export function GenerateScreen({ navigation }) {
                     if (inputImageUrl.startsWith('data:image')) setInputImageUrl('')
                     else setInputImageUrl(e.target.value)
                   }}
-                  className={`flex-1 px-5 py-3.5 rounded-2xl glass-panel text-white placeholder-dark-text-muted focus:outline-none focus:border-primary/50 transition-all ${inputImageUrl.startsWith('data:image') ? 'border-primary/50 text-primary-light bg-primary/5' : ''
-                    }`}
+                  className={`flex-1 px-5 py-3.5 rounded-2xl glass-panel text-white placeholder-dark-text-muted focus:outline-none focus:border-primary/50 transition-all ${
+                    inputImageUrl.startsWith('data:image') ? 'border-primary/50 text-primary-light bg-primary/5' : ''
+                  }`}
                 />
                 <label className="flex items-center justify-center px-4 glass-panel glass-panel-hover rounded-2xl cursor-pointer text-dark-text-muted hover:text-white transition-all shadow-lg" title="Upload Image">
                   <Upload size={22} />
@@ -152,7 +158,9 @@ export function GenerateScreen({ navigation }) {
               </div>
             </div>
             {inputImageUrl.startsWith('data:image') && (
-              <p className="text-xs text-primary-light mt-3 ml-2 flex items-center gap-1"><Check size={14}/> Image loaded and ready</p>
+              <p className="text-xs text-primary-light mt-3 ml-2 flex items-center gap-1">
+                <Check size={14} /> Image loaded and ready
+              </p>
             )}
           </div>
         )}
@@ -161,8 +169,10 @@ export function GenerateScreen({ navigation }) {
         <div className="mb-10 animate-slide-up" style={{ animationDelay: '250ms' }}>
           <label className="text-xs text-dark-text-muted uppercase font-bold tracking-widest mb-3 block">Aspect Ratio</label>
           <div className="grid grid-cols-2 gap-3 p-1 glass-panel rounded-2xl">
-            {[{ id: 'LANDSCAPE', label: 'Landscape 16:9', icon: Monitor },
-            { id: 'PORTRAIT', label: 'Portrait 9:16', icon: Phone }].map(r => (
+            {[
+              { id: 'LANDSCAPE', label: 'Landscape 16:9', icon: Monitor },
+              { id: 'PORTRAIT', label: 'Portrait 9:16', icon: Phone }
+            ].map(r => (
               <button
                 key={r.id}
                 onClick={() => setRatio(r.id)}
@@ -190,12 +200,8 @@ export function GenerateScreen({ navigation }) {
             disabled={loading}
             className="group relative w-full py-4 rounded-2xl font-bold text-white text-lg disabled:opacity-70 disabled:cursor-not-allowed transition-all overflow-hidden"
           >
-            {/* Button Background Gradient */}
             <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-500 group-hover:from-primary-light group-hover:to-blue-400 transition-colors"></div>
-            
-            {/* Button Glow Component */}
             <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-500 blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
-
             <div className="relative flex items-center justify-center gap-2">
               {loading ? (
                 <Loader size={22} className="spinner" />

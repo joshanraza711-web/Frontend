@@ -23,7 +23,7 @@ export function AdminScreen() {
   // Ads state
   const [adSettings, setAdSettings] = useState([])
   const [adOverrides, setAdOverrides] = useState([])
-  const [adLoading, setAdLoading] = useState(false)
+  const [adLoading, setAdLoading] = useState(true)  // true from the start
   const [overrideUserId, setOverrideUserId] = useState('')
   const [overrideAdKey, setOverrideAdKey] = useState('generation_ad')
   const [overrideEnabled, setOverrideEnabled] = useState(false)
@@ -64,7 +64,8 @@ export function AdminScreen() {
   }, [])
 
   useEffect(() => { loadAll() }, [loadAll])
-  useEffect(() => { if (activeTab === 'Ads') loadAds() }, [activeTab, loadAds])
+  // Load ad settings on mount and whenever Ads tab is activated
+  useEffect(() => { loadAds() }, [loadAds])
 
   async function addWorker() {
     if (!newProjectId.trim()) return
@@ -110,8 +111,13 @@ export function AdminScreen() {
   async function toggleGlobalAd(key, currentEnabled) {
     try {
       await api.admin.setAdSetting(key, !currentEnabled)
+      // Optimistic update
       setAdSettings(prev => prev.map(s => s.key === key ? { ...s, enabled: !currentEnabled } : s))
-    } catch (e) { alert('Error: ' + e.message) }
+    } catch (e) {
+      alert('Error toggling ad: ' + e.message)
+      // Refresh from server on error to get real state
+      loadAds()
+    }
   }
 
   async function saveUserOverride() {
@@ -307,6 +313,14 @@ export function AdminScreen() {
               </p>
               {adLoading ? (
                 <div className="flex justify-center py-8"><Loader className="w-6 h-6 text-primary spinner" /></div>
+              ) : adSettings.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-sm text-red-400 mb-2">⚠️ Could not load ad settings.</p>
+                  <p className="text-xs text-dark-text-muted mb-3">Make sure you have run the SQL migration in Supabase.</p>
+                  <button onClick={loadAds} className="px-4 py-2 bg-primary text-white text-xs rounded-lg font-semibold">
+                    Retry
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {adSettings.map(s => (
@@ -318,8 +332,8 @@ export function AdminScreen() {
                         </p>
                         <p className="text-xs text-dark-text-muted mt-0.5">
                           {s.key === 'generation_ad'
-                            ? 'Shown after each generation is queued'
-                            : 'Shown after each bulk download'}
+                            ? 'Shown when user clicks Generate'
+                            : 'Shown when user clicks Download'}
                         </p>
                       </div>
                       <button
