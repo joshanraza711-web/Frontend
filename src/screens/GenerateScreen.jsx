@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { api } from '../services/api'
 import { Zap, Loader, Image as ImageIcon, Monitor, Phone, Pencil, Upload } from 'lucide-react'
+import { PropellerAd } from '../components/PropellerAd.jsx'
+import { useAdSettings } from '../hooks/useAdSettings.js'
 
 export function GenerateScreen({ navigation }) {
   const [prompt, setPrompt] = useState('')
@@ -9,6 +11,8 @@ export function GenerateScreen({ navigation }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [inputImageUrl, setInputImageUrl] = useState('')
+  const [showAd, setShowAd] = useState(false)
+  const { adSettings } = useAdSettings()
 
   async function handleSubmit() {
     if (!prompt.trim()) {
@@ -29,6 +33,8 @@ export function GenerateScreen({ navigation }) {
         body.input_image_url = inputImageUrl.trim()
       }
       await api.createPrompt(body)
+      // Show generation ad if enabled for this user
+      if (adSettings.generation_ad) setShowAd(true)
       setPrompt('')
       setInputImageUrl('')
       alert('✓ Queued! Your prompt has been added to the queue.')
@@ -61,6 +67,8 @@ export function GenerateScreen({ navigation }) {
 
   return (
     <div className="flex flex-col h-full bg-dark-bg font-sans overflow-y-auto">
+      {/* Propeller Ad — fires once after successful generation */}
+      <PropellerAd show={showAd} />
       <div className="flex-1 p-6 max-w-2xl mx-auto w-full">
         <div className="animate-slide-up">
           <h1 className="text-4xl font-bold font-display text-gradient mb-2 drop-shadow-sm">Create</h1>

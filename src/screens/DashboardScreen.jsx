@@ -3,6 +3,8 @@ import { api } from '../services/api'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { SkeletonCard } from '../components/SkeletonCard.jsx'
 import { Download, X, Image as ImageIcon, Video, Folder, Hourglass, Pencil, Pin } from 'lucide-react'
+import { PropellerAd } from '../components/PropellerAd.jsx'
+import { useAdSettings } from '../hooks/useAdSettings.js'
 
 const FILTERS = ['All', 'Images', 'Videos', 'Edits', 'Pending', 'Failed', 'Pinned']
 const FILTER_MAP = {
@@ -28,7 +30,9 @@ export function DashboardScreen({ navigation, route }) {
     total: 0, completed: 0, pending: 0, failed: 0, 
     images: 0, videos: 0, edits: 0, pinned: 0 
   })
+  const [showDownloadAd, setShowDownloadAd] = useState(false)
   const pollRef = useRef(null)
+  const { adSettings } = useAdSettings()
 
   useEffect(() => {
     if (route?.params?.filter) {
@@ -127,6 +131,8 @@ export function DashboardScreen({ navigation, route }) {
         a.href = resp.download_url
         a.download = `autoflow-media-${Date.now()}.zip`
         a.click()
+        // Show download ad if enabled for this user
+        if (adSettings.download_ad) setShowDownloadAd(true)
       }
     } catch (e) {
       alert('Download failed: ' + e.message)
@@ -158,6 +164,8 @@ export function DashboardScreen({ navigation, route }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0B0B0E] text-gray-100 font-sans">
+      {/* Propeller Ad — fires once after a download */}
+      <PropellerAd show={showDownloadAd} />
       {/* Header */}
       <div className="flex justify-between items-center px-5 py-3 z-30">
         <h2 className="text-xl font-bold font-display text-primary-light drop-shadow-[0_0_10px_rgba(124,58,237,0.5)]">My Media</h2>

@@ -52,6 +52,9 @@ export const api = {
   bulkDownload: (promptIds) =>
     request('/media/bulk-download', { method: 'POST', body: JSON.stringify({ promptIds }) }),
 
+  // Ad settings for the current user
+  getAdSettings: () => request('/ads/settings'),
+
   getWorkers: () => request('/workers'),
 
   admin: {
@@ -67,6 +70,21 @@ export const api = {
     createPrompt: (body) => request('/admin/prompts', { method: 'POST', body: JSON.stringify(body) }),
     retryPrompt: (id) => request(`/admin/prompts/${id}/retry`, { method: 'PATCH' }),
     deletePrompt: (id) => request(`/admin/prompts/${id}`, { method: 'DELETE' }),
-    getStats: () => request('/admin/stats')
+    getStats: () => request('/admin/stats'),
+
+    // Ad management
+    getAdSettings: () => request('/admin/ads'),
+    setAdSetting: (key, enabled) =>
+      request(`/admin/ads/${key}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+    getUserAdOverrides: (params = {}) => {
+      const qs = new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([_, v]) => v != null))
+      ).toString()
+      return request(`/admin/ads/users${qs ? `?${qs}` : ''}`)
+    },
+    setUserAdOverride: (user_id, ad_key, enabled) =>
+      request(`/admin/ads/users/${user_id}/${ad_key}`, { method: 'PUT', body: JSON.stringify({ enabled }) }),
+    deleteUserAdOverride: (user_id, ad_key) =>
+      request(`/admin/ads/users/${user_id}/${ad_key}`, { method: 'DELETE' })
   }
 }
